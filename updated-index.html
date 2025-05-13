@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Importabollio</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --bg-primary: #1b1b1b;
+      --bg-secondary: #2a2a2a;
+      --text-primary: #f1f1f1;
+      --text-secondary: #ccc;
+      --border-color: #444;
+      --drop-zone-color: #3a3a3a;
+      --highlight-color: #444444;
+      --success-color: #44ff44;
+      --error-color: #ff4444;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 8px 16px;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: var(--border-color);
+    }
+    #postForm, #editPostForm {
+      background: var(--bg-secondary);
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    #postForm input,
+    #postForm textarea,
+    #editPostForm input,
+    #editPostForm textarea {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 4px;
+    }
+    #postList {
+      margin-top: 20px;
+    }
+    .post-item {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 8px;
+      transition: all 0.5s ease;
+    }
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .post-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .post-meta {
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
+    #fileUploadSection {
+      background: var(--bg-secondary);
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    #dropZone {
+      border: 2px dashed var(--drop-zone-color);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      transition: background-color 0.3s;
+      margin-bottom: 15px;
+    }
+    #dropZone.drag-over {
+      background-color: rgba(58, 58, 58, 0.5);
+    }
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 15px;
+    }
+    .img-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      background: var(--bg-primary);
+      border-radius: 8px;
+      max-width: 200px;
+    }
+    .img-box img {
+      max-width: 150px;
+      max-height: 150px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .img-box span {
+      margin-top: 5px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    .error {
+      color: var(--error-color);
+    }
+    .success {
+      color: var(--success-color);
+    }
+    #externalFileUpload {
+      margin-top: 15px;
+      background: var(--bg-primary);
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+    #externalFileList {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+    .external-file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-secondary);
+      margin-bottom: 5px;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    /* 새로운 스타일 추가 */
+    .new-post {
+      animation: highlight 2s ease;
+    }
+    @keyframes highlight {
+      0% { background-color: var(--highlight-color); }
+      100% { background-color: var(--bg-secondary); }
+    }
+    #notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .online-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--success-color);
+      margin-right: 5px;
+    }
+    .connection-status {
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      margin-left: 10px;
+    }
+    /* 로컬 이미지 스타일 */
+    .local-images-section {
+      margin-top: 30px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📁 Importabollio</h1>
+      <div style="display: flex; align-items: center;">
+        <div class="connection-status">
+          <span class="online-indicator"></span>
+          <span id="connectionStatus">연결됨</span>
+        </div>
+        <div class="nav-buttons">
+          <button class="btn" onclick="showPostForm()">새 게시물 작성</button>
+          <button class="btn" onclick="loadPosts()">게시물 목록</button>
+          <button class="btn" onclick="showFileUploadSection()">파일 업로드</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="postForm" style="display:none;">
+      <h2>새 게시물 작성</h2>
+      <input type="text" id="postTitle" placeholder="제목">
+      <textarea id="postContent" placeholder="내용" rows="10"></textarea>
+      <button class="btn" onclick="createPost()">게시물 등록</button>
+    </div>
+
+    <div id="editPostForm" style="display:none;">
+      <h2>게시물 수정</h2>
+      <input type="hidden" id="editPostId">
+      <input type="text" id="editPostTitle" placeholder="제목">
+      <textarea id="editPostContent" placeholder="내용" rows="10"></textarea>
+      <button class="btn" onclick="updatePost()">수정 완료</button>
+    </div>
+
+    <div id="postList"></div>
+
+    <div id="fileUploadSection" style="display:none;">
+      <h2>🖼 파일 업로드</h2>
+      <div id="dropZone">
+        파일을 여기에 드래그 & 드롭하거나 클릭하여 선택하세요.
+        <input type="file" id="fileInput" multiple style="display:none;">
+      </div>
+      <button class="btn" onclick="document.getElementById('fileInput').click()">파일 선택</button>
+      <p id="status"></p>
+      <div id="externalFileUpload">
+        <h3>외부 파일 업로드</h3>
+        <input type="text" id="externalFileUrl" placeholder="파일 URL 입력">
+        <button class="btn" onclick="addExternalFile()">URL 추가</button>
+        <div id="externalFileList"></div>
+      </div>
+      <h3 style="margin-top:2rem;">업로드된 파일</h3>
+      <div id="gallery">로딩 중...</div>
+    </div>
+  </div>
+
+  <!-- 수정된 스크립트 파일 참조 -->
+  <script src="script-updated.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+</body>
+</html>
